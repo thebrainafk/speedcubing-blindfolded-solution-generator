@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLINDFOLDED SOLUTION GENERATOR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>BLINDFOLDED SOLUTION GENERATOR</h1>
+        <input type="text" id="inputField" placeholder="Input your scramble">
+        <button onclick="reloadAndProcess()">Generate Solution</button>
+        <button onclick="generateScramble()">Generate Scramble</button>
+        <label for="scrambleLength">Scramble length:
+            <input type="number" id="scrambleLength" value="15" min="1">
+        </label>
+        
+        <p>M2 Edges:</p>
+<!--<div id="output"></div>-->
+        <div id="savedLetters"></div>
+
+        <p>Pochman Corners:</p>
+<!--<div id="Output"></div>-->
+        <div id="SavedLetters"></div>
+        
+        <div class="flex-container">
+            <div id="algorithmsContainer">
+                <h2>Special Case Algorithms</h2>
+                <div id="algorithmText">
+                    A: M2<br>
+                    Q: (U' M')3 (U' M) (U' M')4<br>
+                    C: U2 M' U2 M'<br>
+                    I: U' R' F' R S R' F R S' U M2<br>
+                    W: M U2 M U2<br>
+                    S: M2 U' S R' F' R S' R' F R U<br>
+                    <br>
+                    <h2>Parity Algorithms</h2>
+                    1. M2 U' M U2 M U' M' U2 M' U2<br>
+                    or<br>
+                    2. D' L2 D M2 D' L2 D<br>
+                </div>
+            </div>
+            
+            <div id="setupMovesContainer">
+                <h2>All setup moves</h2>
+                <div id="setupMovesText">
+                    A: special case <br>
+                    B: R U R' U'<br>
+                    C: special case <br>
+                    D: L' U' L U<br>
+                    E: B L' B'<br>
+                    F: B L2 B'<br>
+                    G: B L B'<br>
+                    H: Uw' L' Uw<br>
+                    I: special case <br>
+                    J: U R U'<br>
+                    K: buffer<br>
+                    L: U' L' U<br>
+                    M: B' R B<br>
+                    N: Uw R Uw'<br>
+                    O: B' R' B<br>
+                    P: B' R2 B<br>
+                    Q: special case <br>
+                    R: U' L U<br>
+                    S: special case <br>
+                    T: U R' U'<br>
+                    U: buffer<br>
+                    V: U R2 U'<br>
+                    W: special case <br>
+                    X: U' L2 U<br>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="m2script.js"></script>
+    <script src="m2translation.js"></script>
+    <script src="pochscript.js"></script>
+    <script src="pochtranslation.js"></script>
+    <script>
+        // Funktion, um das Eingabefeld zu speichern und die Seite neu zu laden
+        function reloadAndProcess() {
+            const inputField = document.getElementById('inputField').value;
+            const scrambleLength = document.getElementById('scrambleLength').value;
+            localStorage.setItem('inputField', inputField);
+            localStorage.setItem('scrambleLength', scrambleLength);
+            location.reload();
+        }
+
+        // Funktion, um das Eingabefeld nach dem Neuladen wiederherzustellen
+        window.onload = function() {
+            const savedInput = localStorage.getItem('inputField');
+            const savedScrambleLength = localStorage.getItem('scrambleLength');
+            if (savedInput) {
+                document.getElementById('inputField').value = savedInput;
+                localStorage.removeItem('inputField');
+                setTimeout(ProcessInput, 100); // processInput nach Wiederherstellung ausführen
+            }
+            if (savedScrambleLength) {
+                document.getElementById('scrambleLength').value = savedScrambleLength;
+                localStorage.removeItem('scrambleLength');
+            }
+        };
+
+        // Funktion, um einen zufälligen Scramble zu generieren
+        function generateScramble() {
+            const elements = ["R", "L", "F", "B", "U", "D", "R'", "L'", "F'", "B'", "U'", "D'", "R2", "L2", "F2", "B2", "U2", "D2"];
+            const scrambleLength = parseInt(document.getElementById('scrambleLength').value, 10) || 15;
+            const nonInfluencingPairs = [
+                ["L", "R"], ["R", "L"], ["B", "F"], ["F", "B"], ["U", "D"], ["D", "U"],
+                ["L", "R'"], ["R'", "L"], ["B", "F'"], ["F'", "B"], ["U", "D'"], ["D'", "U"],
+                ["L'", "R"], ["R", "L'"], ["B'", "F"], ["F", "B'"], ["U'", "D"], ["D", "U'"],
+                ["L'", "R'"], ["R'", "L'"], ["B'", "F'"], ["F'", "B'"], ["U'", "D'"], ["D'", "U'"],
+                ["L2", "R2"], ["R2", "L2"], ["B2", "F2"], ["F2", "B2"], ["U2", "D2"], ["D2", "U2"],
+                ["U", "D2"], ["D2", "U"], ["U'", "D2"], ["D2", "U'"], ["D", "U2"], ["U2", "D"], ["D'", "U2"], ["U2", "D'"],
+                ["L2", "R"], ["R", "L2"], ["L2", "R'"], ["R'", "L2"], ["L", "R2"], ["R2", "L"], ["L'", "R2"], ["R2", "L'"],
+                ["B2", "F"], ["F", "B2"], ["B2", "F'"], ["F'", "B2"], ["B", "F2"], ["F2", "B"], ["B'", "F2"], ["F2", "B'"]
+            ];
+            let scramble = [];
+            let attempts = 0;
+
+            while (scramble.length < scrambleLength) {
+                attempts++;
+                if (attempts > 1000) break; // Fail-safe to prevent infinite loop
+                const randomIndex = Math.floor(Math.random() * elements.length);
+                const currentElement = elements[randomIndex];
+                const lastElement = scramble[scramble.length - 1] || "";
+                const secondLastElement = scramble[scramble.length - 2] || "";
+
+                // Vermeide gleiche Elemente hintereinander
+                if (currentElement === lastElement) continue;
+                
+                // Vermeide aufeinanderfolgende inverse Elemente
+                if ((currentElement + "'") === lastElement || currentElement === (lastElement + "'")) continue;
+
+                // Vermeide Kombinationen wie "R2 R", "R R2" etc.
+                if (currentElement.includes('2') && lastElement.charAt(0) === currentElement.charAt(0)) continue;
+                if (lastElement.includes('2') && currentElement.charAt(0) === lastElement.charAt(0)) continue;
+
+                // Vermeide direkte Wiederholungen und umgekehrte Bewegungen
+                if ((currentElement + "2") === lastElement || currentElement === (lastElement + "2")) continue;
+                if ((lastElement + "2") === currentElement || lastElement === (currentElement + "2")) continue;
+
+                // Vermeide mehr als zwei aufeinanderfolgende Moves derselben Ebene
+                if (secondLastElement.charAt(0) === lastElement.charAt(0) && lastElement.charAt(0) === currentElement.charAt(0)) continue;
+
+                // Vermeide Paare, die sich nicht gegenseitig beeinflussen
+                if (nonInfluencingPairs.some(pair => pair.includes(lastElement) && pair.includes(currentElement))) {
+                    if (secondLastElement.charAt(0) === currentElement.charAt(0) || secondLastElement.charAt(0) === lastElement.charAt(0)) continue;
+                }
+
+                scramble.push(currentElement);
+            }
+            document.getElementById('inputField').value = scramble.join(' ');
+        }
+    </script>
+</body>
+</html>
